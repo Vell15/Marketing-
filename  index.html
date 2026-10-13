@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор рекламных показателей v5.2</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;padding:20px;color:#e0e0e0}
+  .container{max-width:1200px;margin:0 auto}
+  h1{text-align:center;color:#ffd700;margin-bottom:8px;font-size:28px}
+  .subtitle{text-align:center;color:#888;margin-bottom:24px;font-size:14px}
+  .card{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;margin-bottom:16px}
+  .card h2{color:#4fc3f7;font-size:18px;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px}
+  .form-group{margin-bottom:12px}
+  label{display:block;margin-bottom:4px;font-size:13px;color:#aaa}
+  input,select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:#fff;font-size:15px}
+  input:focus,select:focus{outline:none;border-color:#4fc3f7}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>*{flex:1;min-width:200px}
+  .row-3>*{flex:1;min-width:150px}
+  button{width:100%;padding:14px;border:none;border-radius:8px;background:linear-gradient(90deg,#ff6b35,#f7931e);color:#fff;font-size:17px;font-weight:bold;cursor:pointer;margin-top:8px}
+  button:hover{opacity:0.9}
+  .result-card{background:rgba(79,195,247,0.1);border:1px solid rgba(79,195,247,0.3)}
+  .result-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08)}
+  .result-row:last-child{border-bottom:none}
+  .result-label{color:#aaa;font-size:14px}
+  .result-value{color:#4fc3f7;font-weight:bold;font-size:16px;text-align:right}
+  .result-value.gold{color:#ffd700;font-size:20px}
+  .note{font-size:12px;color:#666;margin-top:12px;line-height:1.5}
+  .region-badge{display:inline-block;background:rgba(255,107,53,0.2);color:#ff6b35;padding:2px 8px;border-radius:12px;font-size:11px}
+  .season-hint{font-size:12px;color:#888;margin-top:4px;line-height:1.4}
+  .season-hint b{color:#ffd700}
+  .age-bar{display:flex;height:20px;border-radius:4px;overflow:hidden;margin-top:6px;width:100%}
+  .age-seg{display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff}
+  .season-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:8px;width:100%}
+  .season-cell{text-align:center;padding:4px;border-radius:4px;font-size:10px;background:rgba(255,255,255,0.05)}
+  .district-table{width:100%;border-collapse:collapse;margin-top:8px}
+  .district-table th,.district-table td{padding:6px 8px;text-align:left;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.08)}
+  .district-table th{color:#4fc3f7}
+  .district-table td{color:#ccc}
+  .autofill-note{font-size:11px;color:#4caf50;margin-top:2px}
+  .auto-plate{background:rgba(255,193,7,0.15);border-left:4px solid #ffc107;padding:12px 14px;border-radius:6px;margin-bottom:10px;color:#ffc107;font-size:13px;line-height:1.6}
+  .auto-plate b{color:#ffd54f}
+  .warn-note{background:rgba(255,107,53,0.15);border-left:4px solid #ff6b35;padding:12px 14px;border-radius:6px;margin-bottom:14px;color:#ffb399;font-size:13px;line-height:1.5}
+  .error-box{color:#ff6b6b;font-weight:bold;padding:12px;background:rgba(255,107,107,0.1);border-radius:8px}
+  @media(max-width:600px){.row,.row-3{flex-direction:column}.season-grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📊 Калькулятор рекламных показателей v5.2</h1>
+  <p class="subtitle">35 отраслей · 95 городов · автонаселение · авто-бюджет · типы районов</p>
+
+  <div class="card">
+    <h2>1. Объект рекламирования</h2>
+    <div class="form-group">
+      <label>Что рекламируем?</label>
+      <input type="text" id="object" value="кулинарные курсы">
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label>Город (можно оставить пустым)</label>
+        <input type="text" id="city" value="Казань" list="cityList" autocomplete="off">
+        <datalist id="cityList"></datalist>
+        <div class="autofill-note" id="cityNote"></div>
+      </div>
+      <div class="form-group">
+        <label>Население города (можно оставить пустым)</label>
+        <input type="number" id="population" value="1341141">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Регион (коэффициент CPC). Если не знаете — выберите «Другой регион»</label>
+      <select id="region">
+        <option value="moscow">Москва и МО (×1,63)</option>
+        <option value="spb">СПб и ЛО (×1,48)</option>
+        <option value="krasnodar">Краснодар (×1,35)</option>
+        <option value="tatarstan" selected>Татарстан (×1,15)</option>
+        <option value="novosibirsk">Новосибирск (×1,10)</option>
+        <option value="rostov">Ростов (×1,10)</option>
+        <option value="sverdlovsk">Свердловск (×1,06)</option>
+        <option value="samara">Самара (×1,00)</option>
+        <option value="krasnoyarsk">Красноярск (×1,00)</option>
+        <option value="bashkortostan">Башкортостан (×0,95)</option>
+        <option value="voronezh">Воронеж (×0,95)</option>
+        <option value="nizhny">Нижний Новгород (×0,95)</option>
+        <option value="perm">Пермь (×0,95)</option>
+        <option value="volgograd">Волгоград (×0,90)</option>
+        <option value="chelyabinsk">Челябинск (×0,85)</option>
+        <option value="omsk">Омск (×0,80)</option>
+        <option value="other">Другой регион (×1,00)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Тип района (обязателен даже без города)</label>
+      <select id="district">
+        <option value="spalny_big" selected>Спальный район большого города</option>
+        <option value="spalny_small">Спальный район маленького города</option>
+        <option value="center_big">Центральный район большого города</option>
+        <option value="center_small">Центральный район маленького города</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2. Бюджет и сроки</h2>
+    <div class="warn-note">💡 Если бюджет или срок не указаны — оставьте пустым или введите 0. Калькулятор рассчитает сам.</div>
+    <div class="row-3">
+      <div class="form-group">
+        <label>Digital (руб./мес.)</label>
+        <input type="number" id="budgetDigital" value="105000">
+      </div>
+      <div class="form-group">
+        <label>Офлайн/email (руб./мес.)</label>
+        <input type="number" id="budgetOffline" value="45000">
+      </div>
+      <div class="form-group">
+        <label>Срок (мес.)</label>
+        <input type="number" id="months" value="2" min="0" max="12">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. Ниша и канал</h2>
+    <div class="row">
+      <div class="form-group">
+        <label>Тип продукта</label>
+        <select id="niche">
+          <option value="education" selected>Онлайн-образование / курсы</option>
+          <option value="services">Услуги для населения</option>
+          <option value="ecommerce">Интернет-магазин</option>
+          <option value="b2b">B2B / бизнес-услуги</option>
+          <option value="realestate">Недвижимость</option>
+          <option value="medical">Медицина</option>
+          <option value="fitness">Фитнес / спорт</option>
+          <option value="food">Общепит / доставка</option>
+          <option value="travel">Туризм</option>
+          <option value="beauty">Красота / салоны</option>
+          <option value="auto">Авто / автосервис</option>
+          <option value="finance">Финансы / страхование</option>
+          <option value="legal">Юридические услуги</option>
+          <option value="construction">Строительство / ремонт</option>
+          <option value="pets">Зоотовары</option>
+          <option value="cleaning">Клининг</option>
+          <option value="dental">Стоматология</option>
+          <option value="psychology">Психология / коучинг</option>
+          <option value="it">IT / разработка</option>
+          <option value="logistics">Логистика</option>
+          <option value="languages">Иностранные языки</option>
+          <option value="driving">Автошкола</option>
+          <option value="music">Музыка / вокал</option>
+          <option value="art">Художественная школа</option>
+          <option value="dance">Танцы</option>
+          <option value="yoga">Йога</option>
+          <option value="tutoring">Репетиторство / ЕГЭ</option>
+          <option value="kids">Детское развитие</option>
+          <option value="kindergarten">Частный детсад</option>
+          <option value="wedding">Свадьбы / праздники</option>
+          <option value="photo">Фото / видео</option>
+          <option value="flowers">Цветы</option>
+          <option value="handmade">Хендмейд</option>
+          <option value="books">Книги</option>
+          <option value="hotels">Отели</option>
+        </select>
+        <div class="season-hint" id="seasonHint"></div>
+      </div>
+      <div class="form-group">
+        <label>Канал</label>
+        <select id="channel">
+          <option value="search" selected>Яндекс.Директ (поиск)</option>
+          <option value="rsya">Яндекс.Директ (РСЯ)</option>
+          <option value="target">VK таргет</option>
+        </select>
+      </div>
+    </div>
+    <div class="row-3">
+      <div class="form-group">
+        <label>Возраст</label>
+        <select id="ageGroup">
+          <option value="all" selected>Все (18–60)</option>
+          <option value="18-24">18–24</option>
+          <option value="25-34">25–34</option>
+          <option value="35-44">35–44</option>
+          <option value="45-54">45–54</option>
+          <option value="55-60">55–60</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Месяц запуска</label>
+        <select id="month">
+          <option value="1">Январь</option><option value="2">Февраль</option>
+          <option value="3">Март</option><option value="4">Апрель</option>
+          <option value="5">Май</option><option value="6">Июнь</option>
+          <option value="7">Июль</option><option value="8">Август</option>
+          <option value="9" selected>Сентябрь</option>
+          <option value="10">Октябрь</option><option value="11">Ноябрь</option>
+          <option value="12">Декабрь</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Конкуренция</label>
+        <select id="competition">
+          <option value="very_low">Очень низкая</option>
+          <option value="low">Низкая</option>
+          <option value="medium" selected>Средняя</option>
+          <option value="high">Высокая</option>
+          <option value="very_high">Очень высокая</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label>Качество объявлений</label>
+        <select id="adQuality">
+          <option value="very_low">Очень низкое</option>
+          <option value="low">Низкое</option>
+          <option value="medium" selected>Среднее</option>
+          <option value="good">Хорошее</option>
+          <option value="excellent">Отличное</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Доверие к рекламе</label>
+        <select id="trust">
+          <option value="very_low">Очень низкое</option>
+          <option value="low">Низкое</option>
+          <option value="medium" selected>Среднее</option>
+          <option value="high">Высокое</option>
+          <option value="very_high">Очень высокое</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <button id="calcBtn" type="button" onclick="calculate(); return false;">Рассчитать прогноз</button>
+
+  <div id="results" class="card result-card" style="display:none;margin-top:20px">
+    <h2>📈 Прогноз рекламной кампании</h2>
+    <div id="autoPlates"></div>
+    <div id="resultsContent"></div>
+    <p class="note" id="disclaimer"></p>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ГОРОДА И НАСЕЛЕНИЕ (2025-2026)
+// ============================================================
+var CITY_POPULATION = {
+  'москва':13399945,'санкт-петербург':5708625,'новосибирск':1640688,
+  'екатеринбург':1560285,'казань':1341141,'красноярск':1218072,
+  'нижний новгород':1191543,'челябинск':1176482,'краснодар':1171347,
+  'уфа':1168899,'самара':1149513,'ростов-на-дону':1145765,
+  'омск':1098258,'пермь':1028128,'волгоград':1005584,
+  'саратов':884967,'тюмень':883196,'тольятти':657452,
+  'махачкала':628570,'хабаровск':615630,'ижевск':613828,
+  'ульяновск':613350,'иркутск':605048,'владивосток':596785,
+  'ставрополь':568715,'ярославль':567000,'севастополь':558000,
+  'барнаул':551000,'сочи':545000,'новокузнецк':537000,
+  'оренбург':536000,'рязань':520000,'балашиха':520000,
+  'томск':510000,'астрахань':505000,'пенза':500000,
+  'липецк':490000,'киров':480000,'тула':470000,
+  'чебоксары':460000,'калининград':450000,'курск':440000,
+  'улан-удэ':430000,'магнитогорск':410000,'тверь':400000,
+  'иваново':380000,'брянск':370000,'белгород':360000,
+  'сургут':350000,'владимир':340000,'архангельск':340000,
+  'чита':330000,'калуга':320000,'саранск':320000,
+  'смоленск':310000,'подольск':310000,'владикавказ':306000,
+  'курган':300000,'вологда':300000,'грозный':300000,
+  'орёл':290000,'череповец':280000,'петрозаводск':280000,
+  'мурманск':270000,'тамбов':261803,'новороссийск':262293,
+  'йошкар-ола':260000,'химки':257128,'мытищи':255429,
+  'якутск':250000,'сыктывкар':245000,'нальчик':239000,
+  'королёв':228095,'люберцы':224195,'красногорск':187634,
+  'домодедово':155000,'одинцово':145000,'электросталь':145000,
+  'коломна':145000,'раменское':130000,'обнинск':130000,
+  'щёлково':125000,'серпухов':125000,'долгопрудный':120000,
+  'пушкино':110000,'реутов':110000,'жуковский':108000,
+  'ногинск':105000,'сергиев посад':100000
+};
+
+// Регион для каждого города (для автоподстановки региона по городу)
+var CITY_REGION = {
+  'москва':'moscow','санкт-петербург':'spb','новосибирск':'novosibirsk',
+  'екатеринбург':'sverdlovsk','казань':'tatarstan','красноярск':'krasnoyarsk',
+  'нижний новгород':'nizhny','челябинск':'chelyabinsk','краснодар':'krasnodar',
+  'уфа':'bashkortostan','самара':'samara','ростов-на-дону':'rostov',
+  'омск':'omsk','пермь':'perm','волгоград':'volgograd','саратов':'other',
+  'тюмень':'other','тольятти':'samara','махачкала':'other','хабаровск':'other',
+  'ижевск':'other','ульяновск':'other','иркутск':'other','владивосток':'other',
+  'ставрополь':'other','ярославль':'other','севастополь':'other','барнаул':'other',
+  'сочи':'krasnodar','новокузнецк':'other','оренбург':'other','рязань':'other',
+  'балашиха':'moscow','томск':'other','астрахань':'other','пенза':'other',
+  'липецк':'other','киров':'other','тула':'other','чебоксары':'other',
+  'калининград':'other','курск':'other','улан-удэ':'other','магнитогорск':'chelyabinsk',
+  'тверь':'other','иваново':'other','брянск':'other','белгород':'other',
+  'сургут':'other','владимир':'other','архангельск':'other','чита':'other',
+  'калуга':'other','саранск':'other','смоленск':'other','подольск':'moscow',
+  'владикавказ':'other','курган':'other','вологда':'other','грозный':'other',
+  'орёл':'other','череповец':'other','петрозаводск':'other','мурманск':'other',
+  'тамбов':'other','новороссийск':'krasnodar','йошкар-ола':'other','химки':'moscow',
+  'мытищи':'moscow','якутск':'other','сыктывкар':'other','нальчик':'other',
+  'королёв':'moscow','люберцы':'moscow','красногорск':'moscow','домодедово':'moscow',
+  'одинцово':'moscow','электросталь':'moscow','коломна':'moscow','раменское':'moscow',
+  'обнинск':'other','щёлково':'moscow','серпухов':'moscow','долгопрудный':'moscow',
+  'пушкино':'moscow','реутов':'moscow','жуковский':'moscow','ногинск':'moscow',
+  'сергиев посад':'moscow'
+};
+
+// ============================================================
+// РЕГИОНЫ
+// ============================================================
+var REGION_COEFF = {
+  moscow:1.63,spb:1.48,krasnodar:1.35,sverdlovsk:1.06,chelyabinsk:0.85,
+  omsk:0.80,rostov:1.10,volgograd:0.90,bashkortostan:0.95,tatarstan:1.15,
+  novosibirsk:1.10,voronezh:0.95,samara:1.00,nizhny:0.95,perm:0.95,
+  krasnoyarsk:1.00,other:1.00
+};
+
+// ============================================================
+// ТИПЫ РАЙОНОВ
+// ============================================================
+var DISTRICT_COEFF = {
+  spalny_big:  {label:'Спальный район большого города',cpc:0.85,conv:0.90,defaultPop:500000,size:'big'},
+  spalny_small:{label:'Спальный район маленького города',cpc:0.70,conv:0.80,defaultPop:100000,size:'small'},
+  center_big:  {label:'Центральный район большого города',cpc:1.25,conv:1.15,defaultPop:500000,size:'big'},
+  center_small:{label:'Центральный район маленького города',cpc:1.05,conv:1.05,defaultPop:100000,size:'small'}
+};
+
+// ============================================================
+// ВОЗРАСТНЫЕ ДОЛИ
+// ============================================================
+var AGE_SHARES = {
+  education:[0.15,0.35,0.25,0.15,0.10],services:[0.10,0.25,0.30,0.20,0.15],
+  ecommerce:[0.15,0.30,0.28,0.17,0.10],b2b:[0.05,0.30,0.35,0.20,0.10],
+  realestate:[0.05,0.25,0.35,0.22,0.13],medical:[0.08,0.22,0.30,0.25,0.15],
+  fitness:[0.20,0.35,0.25,0.15,0.05],food:[0.20,0.35,0.25,0.15,0.05],
+  travel:[0.15,0.30,0.25,0.18,0.12],beauty:[0.15,0.30,0.28,0.17,0.10],
+  auto:[0.08,0.25,0.32,0.22,0.13],finance:[0.05,0.25,0.35,0.23,0.12],
+  legal:[0.05,0.25,0.35,0.22,0.13],construction:[0.07,0.25,0.33,0.22,0.13],
+  pets:[0.12,0.30,0.28,0.18,0.12],cleaning:[0.08,0.28,0.32,0.20,0.12],
+  dental:[0.06,0.22,0.32,0.25,0.15],psychology:[0.10,0.30,0.30,0.20,0.10],
+  it:[0.12,0.38,0.30,0.15,0.05],logistics:[0.05,0.22,0.35,0.25,0.13],
+  languages:[0.20,0.35,0.25,0.12,0.08],driving:[0.35,0.30,0.20,0.10,0.05],
+  music:[0.25,0.30,0.22,0.13,0.10],art:[0.20,0.28,0.25,0.17,0.10],
+  dance:[0.30,0.32,0.20,0.12,0.06],yoga:[0.12,0.30,0.30,0.18,0.10],
+  tutoring:[0.35,0.25,0.22,0.13,0.05],kids:[0.05,0.35,0.35,0.18,0.07],
+  kindergarten:[0.05,0.45,0.35,0.12,0.03],wedding:[0.10,0.45,0.30,0.10,0.05],
+  photo:[0.20,0.40,0.25,0.10,0.05],flowers:[0.15,0.35,0.28,0.15,0.07],
+  handmade:[0.25,0.35,0.25,0.10,0.05],books:[0.25,0.30,0.25,0.12,0.08],
+  hotels:[0.10,0.35,0.30,0.17,0.08]
+};
+
+// ============================================================
+// СЕЗОННОСТЬ
+// ============================================================
+var SEASONALITY = {
+  education:[1.2,1.1,1.0,0.9,0.7,0.5,0.4,0.8,1.5,1.4,1.2,0.9],
+  services:[1.0,1.0,1.1,1.2,1.2,1.1,1.0,1.0,1.1,1.1,1.0,0.9],
+  ecommerce:[0.9,0.9,1.0,1.0,1.1,1.1,1.0,1.1,1.2,1.2,1.4,1.5],
+  b2b:[0.6,1.1,1.2,1.3,1.2,1.1,0.7,0.6,1.3,1.4,1.3,0.8],
+  realestate:[0.7,0.9,1.1,1.2,1.2,1.1,0.9,0.8,1.3,1.4,1.3,0.9],
+  medical:[1.3,1.2,1.3,1.1,1.0,0.9,0.8,0.9,1.3,1.4,1.3,1.1],
+  fitness:[1.8,1.5,1.4,1.2,0.9,0.8,1.1,1.2,1.3,1.4,1.3,1.6],
+  food:[1.2,1.1,1.1,1.1,1.0,1.0,0.9,1.0,1.1,1.1,1.2,1.3],
+  travel:[0.6,0.7,0.9,1.1,1.3,1.5,1.9,1.8,1.2,1.0,0.9,1.0],
+  beauty:[1.1,1.0,1.1,1.1,1.0,0.9,0.9,1.1,1.2,1.1,1.1,1.3],
+  auto:[0.7,0.9,1.1,1.2,1.1,1.0,1.0,1.0,1.3,1.4,1.3,1.1],
+  finance:[0.8,1.0,1.1,1.1,1.1,1.0,0.9,0.9,1.2,1.2,1.1,0.9],
+  legal:[1.1,1.1,1.1,1.0,1.0,1.0,0.9,0.9,1.1,1.1,1.1,1.0],
+  construction:[0.6,0.8,1.1,1.3,1.5,1.5,1.4,1.3,1.2,1.1,0.9,0.7],
+  pets:[1.1,1.0,1.1,1.1,1.0,1.0,0.9,1.0,1.1,1.1,1.1,1.2],
+  cleaning:[0.8,0.9,1.0,1.1,1.1,1.1,1.0,1.0,1.1,1.1,1.1,1.3],
+  dental:[1.2,1.1,1.1,1.0,1.0,0.9,0.8,0.9,1.2,1.2,1.2,1.2],
+  psychology:[1.3,1.2,1.1,1.0,1.0,0.9,0.8,0.9,1.3,1.2,1.2,1.3],
+  it:[1.1,1.1,1.2,1.1,1.0,0.9,0.8,0.9,1.2,1.2,1.1,0.9],
+  logistics:[1.0,1.0,1.1,1.1,1.1,1.1,1.0,1.1,1.2,1.2,1.1,1.0],
+  languages:[1.3,1.2,1.1,1.0,0.8,0.6,0.5,0.9,1.5,1.4,1.3,1.0],
+  driving:[0.9,1.0,1.1,1.2,1.2,1.1,1.0,1.0,1.2,1.1,1.0,0.8],
+  music:[1.2,1.1,1.0,0.9,0.8,0.7,0.6,0.9,1.4,1.3,1.2,1.1],
+  art:[1.1,1.0,1.0,0.9,0.8,0.7,0.6,0.9,1.4,1.3,1.2,1.1],
+  dance:[1.3,1.2,1.1,1.0,0.9,0.8,0.7,0.9,1.4,1.3,1.2,1.3],
+  yoga:[1.6,1.4,1.2,1.0,0.9,0.8,0.9,1.0,1.3,1.3,1.2,1.4],
+  tutoring:[1.2,1.1,1.0,0.9,0.6,0.4,0.5,0.9,1.6,1.4,1.2,0.9],
+  kids:[1.3,1.2,1.1,1.0,0.9,0.7,0.6,0.8,1.4,1.3,1.2,1.1],
+  kindergarten:[1.5,1.4,1.2,1.0,0.7,0.5,0.4,0.9,1.6,1.4,1.1,0.9],
+  wedding:[0.8,1.0,1.1,1.2,1.4,1.5,1.5,1.4,1.3,1.1,0.9,0.9],
+  photo:[0.9,1.0,1.1,1.2,1.4,1.6,1.5,1.4,1.3,1.1,1.0,1.1],
+  flowers:[1.4,1.5,1.6,1.2,1.0,1.0,0.9,1.1,1.2,1.1,1.1,1.4],
+  handmade:[1.2,1.1,1.0,0.9,0.8,0.7,0.6,0.9,1.3,1.3,1.4,1.5],
+  books:[1.0,1.0,1.0,0.9,0.8,0.8,0.7,0.9,1.3,1.2,1.1,1.2],
+  hotels:[0.7,0.8,1.0,1.2,1.4,1.6,1.8,1.7,1.3,1.0,0.9,0.9]
+};
+
+var COMPETITION_COEFF = {very_low:0.7,low:0.85,medium:1.0,high:1.3,very_high:1.6};
+var AD_QUALITY_COEFF = {
+  very_low:{cpc:1.4,conv:0.6},low:{cpc:1.2,conv:0.8},medium:{cpc:1.0,conv:1.0},
+  good:{cpc:0.85,conv:1.15},excellent:{cpc:0.7,conv:1.3}
+};
+var TRUST_COEFF = {very_low:0.5,low:0.7,medium:1.0,high:1.2,very_high:1.4};
+
+// ============================================================
+// БЕНЧМАРКИ
+// ============================================================
+var BENCHMARKS = {
+  education:{name:'Онлайн-образование',cpc:{search:50,rsya:20,target:15},clickToLead:{search:0.06,rsya:0.03,target:0.04},leadToReg:0.70,regToSale:0.10,cpl:{search:350,rsya:200,target:250},avgCheck:10000},
+  services:{name:'Услуги для населения',cpc:{search:60,rsya:25,target:18},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.80,regToSale:0.15,cpl:{search:400,rsya:250,target:300},avgCheck:5000},
+  ecommerce:{name:'Интернет-магазин',cpc:{search:40,rsya:15,target:12},clickToLead:{search:0.04,rsya:0.02,target:0.03},leadToReg:0.90,regToSale:0.02,cpl:{search:300,rsya:180,target:220},avgCheck:3000},
+  b2b:{name:'B2B услуги',cpc:{search:90,rsya:35,target:25},clickToLead:{search:0.04,rsya:0.02,target:0.03},leadToReg:0.50,regToSale:0.15,cpl:{search:600,rsya:400,target:450},avgCheck:25000},
+  realestate:{name:'Недвижимость',cpc:{search:150,rsya:50,target:40},clickToLead:{search:0.03,rsya:0.015,target:0.02},leadToReg:0.30,regToSale:0.05,cpl:{search:3000,rsya:1500,target:2000},avgCheck:500000},
+  medical:{name:'Медицина',cpc:{search:80,rsya:30,target:22},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.60,regToSale:0.20,cpl:{search:2500,rsya:1200,target:1500},avgCheck:15000},
+  fitness:{name:'Фитнес',cpc:{search:45,rsya:18,target:14},clickToLead:{search:0.06,rsya:0.03,target:0.04},leadToReg:0.70,regToSale:0.25,cpl:{search:350,rsya:200,target:250},avgCheck:3000},
+  food:{name:'Общепит',cpc:{search:35,rsya:14,target:11},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.85,regToSale:0.15,cpl:{search:280,rsya:160,target:200},avgCheck:1500},
+  travel:{name:'Туризм',cpc:{search:55,rsya:22,target:16},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.65,regToSale:0.12,cpl:{search:400,rsya:250,target:300},avgCheck:80000},
+  beauty:{name:'Красота',cpc:{search:50,rsya:20,target:15},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.75,regToSale:0.20,cpl:{search:380,rsya:230,target:280},avgCheck:4000},
+  auto:{name:'Авто',cpc:{search:70,rsya:28,target:20},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.70,regToSale:0.15,cpl:{search:500,rsya:320,target:380},avgCheck:25000},
+  finance:{name:'Финансы',cpc:{search:100,rsya:40,target:28},clickToLead:{search:0.04,rsya:0.02,target:0.03},leadToReg:0.40,regToSale:0.10,cpl:{search:800,rsya:500,target:600},avgCheck:50000},
+  legal:{name:'Юридические услуги',cpc:{search:85,rsya:32,target:24},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.55,regToSale:0.18,cpl:{search:700,rsya:450,target:550},avgCheck:30000},
+  construction:{name:'Строительство',cpc:{search:65,rsya:26,target:19},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.60,regToSale:0.12,cpl:{search:550,rsya:350,target:420},avgCheck:80000},
+  pets:{name:'Зоотовары',cpc:{search:40,rsya:16,target:12},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.80,regToSale:0.15,cpl:{search:300,rsya:180,target:220},avgCheck:3500},
+  cleaning:{name:'Клининг',cpc:{search:55,rsya:22,target:16},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.75,regToSale:0.18,cpl:{search:420,rsya:260,target:320},avgCheck:5000},
+  dental:{name:'Стоматология',cpc:{search:120,rsya:45,target:30},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.55,regToSale:0.25,cpl:{search:3000,rsya:1800,target:2200},avgCheck:25000},
+  psychology:{name:'Психология',cpc:{search:60,rsya:24,target:17},clickToLead:{search:0.06,rsya:0.03,target:0.04},leadToReg:0.65,regToSale:0.20,cpl:{search:450,rsya:280,target:350},avgCheck:6000},
+  it:{name:'IT услуги',cpc:{search:110,rsya:42,target:30},clickToLead:{search:0.04,rsya:0.02,target:0.03},leadToReg:0.45,regToSale:0.12,cpl:{search:900,rsya:550,target:650},avgCheck:60000},
+  logistics:{name:'Логистика',cpc:{search:75,rsya:30,target:21},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.55,regToSale:0.15,cpl:{search:600,rsya:380,target:450},avgCheck:40000},
+  languages:{name:'Иностранные языки',cpc:{search:55,rsya:22,target:17},clickToLead:{search:0.06,rsya:0.03,target:0.04},leadToReg:0.75,regToSale:0.15,cpl:{search:380,rsya:220,target:270},avgCheck:8000},
+  driving:{name:'Автошкола',cpc:{search:75,rsya:30,target:22},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.60,regToSale:0.25,cpl:{search:600,rsya:380,target:450},avgCheck:35000},
+  music:{name:'Музыка / вокал',cpc:{search:50,rsya:20,target:15},clickToLead:{search:0.06,rsya:0.03,target:0.04},leadToReg:0.70,regToSale:0.18,cpl:{search:400,rsya:240,target:300},avgCheck:7000},
+  art:{name:'Художественная школа',cpc:{search:48,rsya:19,target:14},clickToLead:{search:0.06,rsya:0.03,target:0.04},leadToReg:0.70,regToSale:0.15,cpl:{search:380,rsya:220,target:270},avgCheck:6500},
+  dance:{name:'Танцы',cpc:{search:45,rsya:18,target:13},clickToLead:{search:0.06,rsya:0.03,target:0.04},leadToReg:0.75,regToSale:0.22,cpl:{search:340,rsya:200,target:250},avgCheck:5500},
+  yoga:{name:'Йога',cpc:{search:55,rsya:22,target:17},clickToLead:{search:0.06,rsya:0.03,target:0.04},leadToReg:0.70,regToSale:0.20,cpl:{search:400,rsya:250,target:300},avgCheck:4500},
+  tutoring:{name:'Репетиторство / ЕГЭ',cpc:{search:65,rsya:26,target:20},clickToLead:{search:0.06,rsya:0.03,target:0.04},leadToReg:0.70,regToSale:0.20,cpl:{search:450,rsya:270,target:330},avgCheck:12000},
+  kids:{name:'Детское развитие',cpc:{search:70,rsya:28,target:22},clickToLead:{search:0.06,rsya:0.03,target:0.04},leadToReg:0.70,regToSale:0.20,cpl:{search:500,rsya:300,target:360},avgCheck:8000},
+  kindergarten:{name:'Частный детсад',cpc:{search:90,rsya:35,target:25},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.55,regToSale:0.30,cpl:{search:1500,rsya:900,target:1100},avgCheck:35000},
+  wedding:{name:'Свадьбы',cpc:{search:130,rsya:50,target:35},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.50,regToSale:0.15,cpl:{search:2000,rsya:1200,target:1500},avgCheck:120000},
+  photo:{name:'Фото / видео',cpc:{search:80,rsya:32,target:22},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.65,regToSale:0.20,cpl:{search:700,rsya:420,target:520},avgCheck:25000},
+  flowers:{name:'Цветы',cpc:{search:45,rsya:18,target:14},clickToLead:{search:0.06,rsya:0.03,target:0.04},leadToReg:0.85,regToSale:0.20,cpl:{search:280,rsya:170,target:210},avgCheck:3500},
+  handmade:{name:'Хендмейд',cpc:{search:40,rsya:16,target:12},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.80,regToSale:0.15,cpl:{search:300,rsya:180,target:220},avgCheck:3000},
+  books:{name:'Книги',cpc:{search:35,rsya:14,target:11},clickToLead:{search:0.04,rsya:0.02,target:0.03},leadToReg:0.85,regToSale:0.10,cpl:{search:250,rsya:150,target:180},avgCheck:1500},
+  hotels:{name:'Отели',cpc:{search:90,rsya:35,target:25},clickToLead:{search:0.05,rsya:0.025,target:0.035},leadToReg:0.60,regToSale:0.20,cpl:{search:900,rsya:550,target:650},avgCheck:15000}
+};
+
+// ============================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================================
+function el(id){return document.getElementById(id);}
+function normalizeCity(s){
+  return String(s||'').trim().toLowerCase().replace(/ё/g,'е').replace(/\s+/g,' ');
+}
+
+// ============================================================
+// АВТОЗАПОЛНЕНИЕ ГОРОДА И РЕГИОНА
+// ============================================================
+function setupCityAutofill(){
+  var cityInput = el('city');
+  var popInput = el('population');
+  var note = el('cityNote');
+  var dl = el('cityList');
+  if(!cityInput||!popInput||!note||!dl) return;
+
+  if(dl.children.length===0){
+    var keys = Object.keys(CITY_POPULATION).sort();
+    for(var i=0;i<keys.length;i++){
+      var opt = document.createElement('option');
+      opt.value = keys[i].charAt(0).toUpperCase()+keys[i].slice(1);
+      dl.appendChild(opt);
+    }
+  }
+
+  function fill(){
+    var key = normalizeCity(cityInput.value);
+    if(cityInput.value.trim()===''){
+      note.textContent = 'Город не указан — расчёт по средним значениям для района';
+      note.style.color = '#ff9800';
+      return;
+    }
+    if(CITY_POPULATION[key]){
+      popInput.value = CITY_POPULATION[key];
+      note.textContent = '✓ Население подставлено ('+CITY_POPULATION[key].toLocaleString('ru-RU')+' чел., 2025–2026)';
+      note.style.color = '#4caf50';
+      if(CITY_REGION[key]){
+        var regSel = el('region');
+        for(var j=0;j<regSel.options.length;j++){
+          if(regSel.options[j].value === CITY_REGION[key]){
+            regSel.selectedIndex = j;
+            break;
+          }
+        }
+      }
+    } else {
+      note.textContent = 'Город не в базе — введите население вручную или оставьте пустым';
+      note.style.color = '#ff9800';
+    }
+  }
+  cityInput.addEventListener('input',fill);
+  cityInput.addEventListener('change',fill);
+  cityInput.addEventListener('blur',fill);
+  fill();
+}
+
+// ============================================================
+// ПОДСКАЗКА ПО СЕЗОННОСТИ
+// ============================================================
+function updateSeasonHint(){
+  var nk = el('niche').value;
+  var data = SEASONALITY[nk];
+  if(!data) return;
+  var mn = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+  var mx = Math.max.apply(null,data);
+  var mi = Math.min.apply(null,data);
+  var pk=[],lw=[];
+  data.forEach(function(v,i){ if(v===mx) pk.push(mn[i]); if(v===mi) lw.push(mn[i]); });
+  el('seasonHint').innerHTML = '<b>Пик сезонности:</b> '+pk.join(', ')+' (×'+mx+') · <b>Спад:</b> '+lw.join(', ')+' (×'+mi+')';
+}
+
+// ============================================================
+// РЕКОМЕНДАЦИИ
+// ============================================================
+function recommendBudget(pop,rc,cc,d){
+  var base = Math.min(Math.max(pop*0.08,30000),300000);
+  var rec = Math.round(base*rc*cc*d.cpc);
+  return {digital:rec, offline:Math.round(rec*0.3)};
+}
+function recommendMonths(nk,startM){
+  var data = SEASONALITY[nk];
+  var mx = Math.max.apply(null,data);
+  for(var i=0;i<6;i++){
+    var idx = (startM-1+i)%12;
+    if(data[idx]===mx) return Math.max(2,i+1);
+  }
+  return 3;
+}
+
+// ============================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ВЫВОДА
+// ============================================================
+function row(l,v){ return '<div class="result-row"><span class="result-label">'+l+'</span><span class="result-value">'+v+'</span></div>'; }
+function rowGold(l,v){ return '<div class="result-row"><span class="result-label"><b>'+l+'</b></span><span class="result-value gold">'+v+'</span></div>'; }
+function rowHTML(l,h){ return '<div class="result-row"><span class="result-label" style="flex:1">'+l+'</span><span class="result-value" style="flex:2">'+h+'</span></div>'; }
+
+// ============================================================
+// ГЛАВНАЯ ФУНКЦИЯ
+// ============================================================
+function calculate(){
+  try {
+    var obj = el('object').value || 'объект';
+
+    // --- Входные данные с проверкой «не указано» ---
+    var cityRaw = el('city').value.trim();
+    var cityEmpty = cityRaw === '';
+    var city = cityEmpty ? 'Не указан' : cityRaw;
+
+    var popRaw = parseInt(el('population').value);
+    var popEmpty = !popRaw || popRaw <= 0;
+
+    var rk = el('region').value;
+    var regionEmpty = (rk === 'other');
+
+    var bdRaw = parseFloat(el('budgetDigital').value)||0;
+    var boRaw = parseFloat(el('budgetOffline').value)||0;
+    var mnRaw = parseInt(el('months').value)||0;
+
+    var nk = el('niche').value;
+    var ch = el('channel').value;
+    var ag = el('ageGroup').value;
+    var m = parseInt(el('month').value)||9;
+    var ck = el('competition').value;
+    var aqk = el('adQuality').value;
+    var tk = el('trust').value;
+    var dk = el('district').value;
+
+    var niche = BENCHMARKS[nk];
+    var rc = REGION_COEFF[rk];
+    var as = AGE_SHARES[nk];
+    var sc = SEASONALITY[nk][m-1];
+    var cc = COMPETITION_COEFF[ck];
+    var aq = AD_QUALITY_COEFF[aqk];
+    var tc = TRUST_COEFF[tk];
+    var d = DISTRICT_COEFF[dk];
+
+    // --- ПЛАШКИ ---
+    var plates = [];
+    var unknownGeo = [];
+    if(cityEmpty) unknownGeo.push('город');
+    if(regionEmpty) unknownGeo.push('регион');
+    if(popEmpty) unknownGeo.push('население');
+
+    var pop = popRaw;
+    if (unknownGeo.length > 0) {
+      if (popEmpty) {
+        pop = d.defaultPop;
+      }
+      plates.push(
+        '<b>⚠ Не указано: ' + unknownGeo.join(', ') + '.</b><br>' +
+        'Расчёт выполнен по среднероссийским значениям для выбранного типа района: <b>' + d.label + '</b>.<br>' +
+        'Принятые значения: население <b>' + pop.toLocaleString('ru-RU') + ' чел.</b>, региональный коэффициент <b>×' + rc + '</b>.<br>' +
+        'Для точного расчёта укажите город, регион и население.'
+      );
+    }
+
+    // --- Авто-бюджет и срок ---
+    var bd = bdRaw, bo = boRaw, mm = mnRaw;
+    if(bd===0 && bo===0){
+      var rec = recommendBudget(pop,rc,cc,d);
+      bd = rec.digital; bo = rec.offline;
+      plates.push(
+        '<b>⚠ Бюджет не указан — рассчитано рекомендуемое значение.</b><br>' +
+        'Digital: <b>' + bd.toLocaleString('ru-RU') + ' ₽/мес</b> · ' +
+        'Офлайн/email: <b>' + bo.toLocaleString('ru-RU') + ' ₽/мес</b><br>' +
+        'Формула: население × 0,08 × регион × конкуренция × тип района (30–300 тыс. ₽). Офлайн = 30 % digital.'
+      );
+    }
+    if(mm===0){
+      mm = recommendMonths(nk,m);
+      plates.push(
+        '<b>⚠ Срок не указан — рассчитан рекомендуемый.</b><br>' +
+        'Рекомендуемая длительность: <b>' + mm + ' мес.</b> (чтобы захватить пик сезонности «' + niche.name + '»).'
+      );
+    }
+    if(mm<1) mm=1;
+
+    // --- Расчёт ---
+    var ta = Math.round(pop*0.60);
+    var am=1.0, al='Все возрасты';
+    if(ag!=='all'){
+      var idx = ['18-24','25-34','35-44','45-54','55-60'].indexOf(ag);
+      am = as[idx]||0.2; al=ag+' лет';
+    }
+    var aa = Math.round(ta*am);
+    var inter = Math.round(aa*0.15*sc);
+
+    var baseCPC = niche.cpc[ch];
+    var cpc = Math.round(baseCPC*rc*cc*aq.cpc*sc*d.cpc);
+    var tdb = bd*mm, tob = bo*mm, tb = tdb+tob;
+    var clicks = cpc>0 ? Math.round(tdb/cpc) : 0;
+
+    var baseC2L = niche.clickToLead[ch];
+    var c2l = Math.min(1, baseC2L*aq.conv*tc*d.conv);
+    var ld = Math.round(clicks*c2l);
+    var cplO = niche.cpl[ch]*rc*cc;
+    var lo = cplO>0 ? Math.round(tob/cplO) : 0;
+    var tl = ld+lo;
+    var reg = Math.round(tl*niche.leadToReg);
+    var pay = Math.round(reg*niche.regToSale);
+    var reach = Math.round(inter*0.30);
+    var aw = ta>0 ? Math.min(30,Math.round(reach/ta*100*0.5)) : 0;
+    var acpl = tl>0 ? Math.round(tb/tl) : 0;
+    var rev = pay*niche.avgCheck;
+    var romi = tb>0 ? Math.round((rev-tb)/tb*100) : 0;
+
+    // Возрастная диаграмма
+    var ac = ['#ff6b35','#4fc3f7','#ffd700','#9c27b0','#4caf50'];
+    var abh = '<div class="age-bar">';
+    as.forEach(function(s,i){ abh += '<div class="age-seg" style="width:'+(s*100)+'%;background:'+ac[i]+'">'+Math.round(s*100)+'%</div>'; });
+    abh += '</div>';
+
+    // Сезонная диаграмма
+    var sd = SEASONALITY[nk];
+    var mnNames = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+    var sh = '<div class="season-grid">';
+    sd.forEach(function(v,i){
+      var bg = v>1.3?'rgba(255,107,53,0.5)':v<0.7?'rgba(79,195,247,0.3)':'rgba(255,255,255,0.05)';
+      sh += '<div class="season-cell" style="background:'+bg+'">'+mnNames[i]+'<br><b>'+v+'</b></div>';
+    });
+    sh += '</div>';
+
+    // Таблица по районам
+    var dth = '<table class="district-table"><tr><th>Тип района</th><th>CPC, ₽</th><th>Конверсия</th><th>Заявок</th><th>CPL, ₽</th></tr>';
+    var dks = ['spalny_big','spalny_small','center_big','center_small'];
+    var bestCPL = Infinity, bestD = 'spalny_big';
+    dks.forEach(function(k){
+      var dd = DISTRICT_COEFF[k];
+      var dCPC = Math.round(baseCPC*rc*cc*aq.cpc*sc*dd.cpc);
+      var dC = dCPC>0?Math.round(tdb/dCPC):0;
+      var dC2L = Math.min(1,baseC2L*aq.conv*tc*dd.conv);
+      var dLD = Math.round(dC*dC2L);
+      var dTL = dLD+lo;
+      var dCPL = dTL>0?Math.round(tb/dTL):0;
+      if(dCPL>0 && dCPL<bestCPL){ bestCPL=dCPL; bestD=k; }
+      var isSel = k===dk?' style="background:rgba(79,195,247,0.1);font-weight:bold;"':'';
+      dth += '<tr'+isSel+'><td>'+dd.label+(k===dk?' ★':'')+'</td><td>'+dCPC+'</td><td>'+(dC2L*100).toFixed(1)+'%</td><td>'+dTL+'</td><td>'+dCPL+'</td></tr>';
+    });
+    dth += '</table>';
+    dth += '<div class="autofill-note" style="margin-top:4px;">★ — выбранный район · Лучший CPL: <b>'+DISTRICT_COEFF[bestD].label+'</b> ('+bestCPL+' ₽)</div>';
+
+    var cityDisplay = city + ' <span class="region-badge">×'+rc+'</span>';
+    if (cityEmpty) cityDisplay = '<i style="color:#ff9800">Не указан</i> <span class="region-badge">×'+rc+'</span>';
+
+    var html =
+      row('Объект',obj) +
+      row('Город / регион',cityDisplay) +
+      row('Тип района',d.label) +
+      row('Ниша',niche.name) +
+      row('Возрастная группа',al) +
+      rowHTML('Возрастные доли ЦА',abh) +
+      row('Сезонность (месяц '+m+')','×'+sc) +
+      row('Конкуренция','×'+cc) +
+      row('Качество объявлений','CPC ×'+aq.cpc+' · Конв. ×'+aq.conv) +
+      row('Доверие','×'+tc) +
+      row('Срок кампании',mm+' мес.') +
+      row('Бюджет за весь срок',tb.toLocaleString('ru-RU')+' ₽') +
+      row('Целевая аудитория (18–60)',ta.toLocaleString('ru-RU')+' чел.') +
+      row('Аудитория выбранного возраста',aa.toLocaleString('ru-RU')+' чел.') +
+      row('Интересуются',inter.toLocaleString('ru-RU')+' чел.') +
+      row('Планируемый охват',reach.toLocaleString('ru-RU')+' чел.') +
+      row('CPC (итоговый)',cpc+' ₽') +
+      row('Клики',clicks.toLocaleString('ru-RU')) +
+      row('Конверсия клик→заявка',(c2l*100).toFixed(2)+'%') +
+      row('Заявки digital',ld.toLocaleString('ru-RU')) +
+      row('Заявки офлайн/email',lo.toLocaleString('ru-RU')) +
+      rowGold('Всего заявок',tl.toLocaleString('ru-RU')) +
+      rowGold('Регистрации / конверсии',reg.toLocaleString('ru-RU')) +
+      rowGold('Платные клиенты',pay.toLocaleString('ru-RU')) +
+      row('Фактический CPL',acpl+' ₽') +
+      row('Рост узнаваемости','~'+aw+'%') +
+      row('Средний чек',niche.avgCheck.toLocaleString('ru-RU')+' ₽') +
+      row('Прогноз выручки',rev.toLocaleString('ru-RU')+' ₽') +
+      row('ROMI',romi+'%') +
+      rowHTML('Сезонный профиль',sh) +
+      rowHTML('Значения по типам районов',dth);
+
+    var ph = '';
+    if(plates.length>0) ph = '<div class="auto-plate">'+plates.join('<br><br>')+'</div>';
+
+    el('autoPlates').innerHTML = ph;
+    el('resultsContent').innerHTML = html;
+    el('results').style.display = 'block';
+
+    el('disclaimer').innerHTML =
+      '<b>Источники:</b> click.ru (CPC по регионам, Q2 2025), Яндекс.Директ (сезонность), ' +
+      'ze.media, E-Promo Group, Sostav.ru, GetCourse, Google Ads Quality Score, ' +
+      'Росстат / World Population Review (население 2025–2026). ' +
+      '<b>Формула:</b> CPC = базовая × регион × конкуренция × качество × сезонность × тип района. ' +
+      'Конверсия = базовая × качество × доверие × тип района. Бюджет и выручка — за весь срок.';
+
+    el('results').scrollIntoView({behavior:'smooth'});
+  } catch(err){
+    console.error(err);
+    el('resultsContent').innerHTML = '<div class="error-box">Ошибка расчёта: '+err.message+'</div>';
+    el('results').style.display = 'block';
+  }
+}
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+function initApp(){
+  try {
+    setupCityAutofill();
+    updateSeasonHint();
+    var n = el('niche');
+    if(n) n.addEventListener('change', updateSeasonHint);
+    var b = el('calcBtn');
+    if(b) b.addEventListener('click', function(e){ e.preventDefault(); calculate(); });
+  } catch(e){ console.error('init', e); }
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+</script>
+</body>
+</html>
